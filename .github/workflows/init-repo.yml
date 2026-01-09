@@ -1,0 +1,49 @@
+name: Repository Initialization
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# 受信側: Repo Factory からの dispatch イベントを受け取る
+on:
+  repository_dispatch:
+    types: [repo-init]
+
+jobs:
+  initialize:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 全ての履歴とブランチを取得してチェックに使用
+
+      - name: 初期化済みチェック
+        run: |
+          # devブランチが既に存在するかチェック
+          if git show-ref --verify --quiet refs/remotes/origin/dev; then
+            echo "⚠️ devブランチが既に存在するため、初期化処理をスキップします。"
+            exit 0
+          fi
+          echo "✅ 初期化未実施を確認しました。処理を開始します。"
+
+      - name: Configure Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: ブランチの作成 (dev, qa)
+        run: |
+          # main から dev, qa 分岐を作成
+          git checkout main
+
+          # dev branch
+          git checkout -b dev
+          git push origin dev
+          echo "✅ devブランチを作成しました"
+
+          # qa branch
+          git checkout -b qa
+          git push origin qa
+          echo "✅ qaブランチを作成しました"
